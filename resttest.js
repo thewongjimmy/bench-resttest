@@ -1,6 +1,25 @@
+/**
+ * Jimmy's Solution for Bench's RestTest: http://resttest.bench.co/
+ *
+ * Includes Additional Features
+ * 
+ * Commands:
+ 
+ * GET /transactions/:page
+ * for a standard list of transactions
+ *
+ * GET /categories/:page
+ * for a list of transactions grouped and totaled by category
+ *
+ * GET /bydate/:page
+ * for a running daily balance
+ *
+ */
+ 
 var http = require('http');
 
-process.stdin.resume();
+//prompt for user input
+process.stdin.resume(); 
 process.stdin.setEncoding('utf8');
 
 console.log("");
@@ -8,10 +27,12 @@ console.log("Insert a command (Insert 'help' for a list of commands): ");
 
 process.stdin.on('data', function (text) {
 
-    var command = text.replace('\n', '');
+    //remove system text from input string
+    var command = text.replace('\n', '');  
     command = command.replace('\r', '');
         
-    if(command.indexOf("GET /transactions/") > -1) // 0
+    //GET command for transactions list
+    if(command.indexOf("GET /transactions/") > -1) 
     {
         var page = command.replace("GET /transactions/", '');
             var options = {
@@ -20,7 +41,9 @@ process.stdin.on('data', function (text) {
         };
         http.request(options, callback).end();
     } 
-    else if(command.indexOf("GET /categories/") > -1)
+    
+    //GET command for transactions by category
+    else if(command.indexOf("GET /categories/") > -1)  
     {
         var page = command.replace("GET /categories/", '');
             var options = {
@@ -29,7 +52,9 @@ process.stdin.on('data', function (text) {
         };
         http.request(options, categoriesCallback).end();
     } 
-    else if(command.indexOf("GET /bydate/") > -1)
+    
+    //GET command for running balance by date
+    else if(command.indexOf("GET /bydate/") > -1)  
     {
         var page = command.replace("GET /bydate/", '');
             var options = {
@@ -38,11 +63,15 @@ process.stdin.on('data', function (text) {
         };
         http.request(options, datesCallback).end();
     } 
-    else if(command === "quit")
+    
+    //quit command
+    else if(command === "quit")  
     {
         done();
     } 
-    else if(command === "help")
+    
+    //help command
+    else if(command === "help")  
     {
         console.log("")
         console.log("'GET /transactions/1' for standard list of transactions and balances"); 
@@ -50,7 +79,9 @@ process.stdin.on('data', function (text) {
         console.log("'GET /bydate/1' for running balance by date");  
         console.log("'quit' to exit"); 
     }
-    else
+    
+    //error throw
+    else  
     {
         console.log("")
         console.log("Wrong command. Please try again. Enter 'help' for example, 'quit' to exit.");
@@ -61,7 +92,8 @@ function done() {
     process.exit();
 }
 
-callback = function(response) {
+//callback for transactions list
+callback = function(response) { 
   var str = '';
 
   response.on('data', function (chunk) {
@@ -81,25 +113,31 @@ callback = function(response) {
     textAsObject.transactions.forEach(function(individualTransaction) {
         var key = individualTransaction.Amount+individualTransaction.Date+individualTransaction.Company;
         
-        if(!savedTransactions[key])
+        //gather unique transactions
+        if(!savedTransactions[key])  
         {    
             savedTransactions[key] = true;
             filteredTransactions.push(individualTransaction);
             
             filteredBalance = filteredBalance+parseInt(individualTransaction.Amount);
             
-        } else
+        } 
+        
+        //gather duplicate transactions
+        else  
         {
             duplicateTransactions.push(individualTransaction);
         }
         totalBalance = totalBalance+parseInt(individualTransaction.Amount);
             
-        var filteredTransactionCompanyName = individualTransaction.Company.replace(/(\.+)?(#+)?(x+)?\d+/g,'');
+        //clean up vendor names
+        var filteredTransactionCompanyName = individualTransaction.Company.replace(/(\.+)?(#+)?(x+)?\d+/g,'');  
         filteredTransactionCompanyName = filteredTransactionCompanyName.replace(' @ ', '');
         individualTransaction.Company = filteredTransactionCompanyName;
     });
     
-    console.log("");
+    //output for transactions list
+    console.log("");  
     console.log("---Unique Transactions---");
     console.log(filteredTransactions);
     console.log("-------");
@@ -119,7 +157,8 @@ callback = function(response) {
   });  
 }
   
-categoriesCallback = function(response) {
+//callback for expenses by category
+categoriesCallback = function(response) {  
   var str = '';
 
   response.on('data', function (chunk) {
@@ -141,14 +180,16 @@ categoriesCallback = function(response) {
         transactionsByCategory[individualTransaction.Ledger].push(individualTransaction);
         balanceByCategory[individualTransaction.Ledger] += parseInt(individualTransaction.Amount);
         
-        var filteredTransactionCompanyName = individualTransaction.Company.replace(/(\.+)?(#+)?(x+)?\d+/g,'');
+        //clean up vendor names
+        var filteredTransactionCompanyName = individualTransaction.Company.replace(/(\.+)?(#+)?(x+)?\d+/g,'');  
         filteredTransactionCompanyName = filteredTransactionCompanyName.replace(' @ ', '');
         individualTransaction.Company = filteredTransactionCompanyName;
     });
     
     for( var i = 0; i < Object.keys(transactionsByCategory).length; i++)
     {
-        console.log("");
+        //output for transactions by category
+        console.log("");  
         var key = Object.keys(transactionsByCategory)[i];
         console.log("Category: "+key+"---");
         transactionsByCategory[key].forEach(function(categoryTransaction) {
@@ -161,7 +202,8 @@ categoriesCallback = function(response) {
   });
   }
   
-datesCallback = function(response) {
+//callback for running balance by day
+datesCallback = function(response) {  
   var str = '';
 
   response.on('data', function (chunk) {
@@ -170,7 +212,6 @@ datesCallback = function(response) {
 
   response.on('end', function () {
     var textAsObject = JSON.parse(str);
-    
     var balanceByDate = [];
     
     textAsObject.transactions.forEach(function(individualTransaction) {
@@ -188,7 +229,8 @@ datesCallback = function(response) {
     var day = 0;
     var partialBalance = 0;
     
-    console.log("");
+    //output for running balance by day
+    console.log("");  
     orderedKeys.forEach(function(key) {
         console.log("Day: "+key);
         day++;
